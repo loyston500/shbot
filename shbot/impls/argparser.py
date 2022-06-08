@@ -3,7 +3,7 @@ from typing import *
 
 import argparse
 
-__all__: List[str] = ['ArgumentParser']
+__all__: List[str] = ['ArgumentParser', 'ArgumentParserParseError', 'ArgumentParserHelpCallError']
 
 class ArgumentParserParseError(Exception): pass
 class ArgumentParserHelpCallError(Exception): pass

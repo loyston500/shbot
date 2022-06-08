@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import *
 
+from .argparser import ArgumentParserHelpCallError, ArgumentParserParseError
+
 import argparse
 
 __all__ = ['CommandOutput', 'Stdout', 'Stderr']
@@ -112,12 +114,13 @@ class Commands:
             if argparser is not None:
                 argparser.prog = coro.__name__
                 async def wrap(ctx, out, args, *_args, **kwargs):
-                    args = argparser.parse_args(args)
+                    try:
+                        args = argparser.parse_args(args)
 
-                    if argparser.error_message is not None:
-                        out @ 1 - argparser.error_message
+                    except ArgumentParserParseError as err:
+                        out @ 1 - err.args[0]
                         argparser.error_message = None
-                    elif argparser.help is not None:
+                    except ArgumentParserHelpCallError as err:
                         out + argparser.format_help()
                         argparser.help = None
                     else:    
