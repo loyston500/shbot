@@ -69,7 +69,7 @@ class Interpreter:
                 in_file = None
 
         content = b''.join(out.get_stds()).decode('utf-8', 'replace') or "** **"
-        await ctx.send(content, files=out_files)
+        await ctx.send(content[:2000], files=out_files)
 
 
 
