@@ -25,10 +25,22 @@ class InstrType(Enum):
     OUT2: str = '2>'
     IN: str = '<'
 
-Instr = List[Union[InstrType, str]]
+class Instr:
+    __slots__ = ('instr_type', 'args')
+    
+    def __init__(self, instr_type: InstrType, *args: str):
+        self.instr_type = instr_type
+        self.args = list(args)
+        
+    def add_argument(self, arg: str) -> Instr:
+        self.args.append(arg)
+        return self
+
 Instrs = List[Instr]
 
 class Token:
+    __slots__ = ('string', 'token_type')
+    
     def __init__(self, string: str, token_type: TokenType):
         self.string = string
         self.token_type = token_type
@@ -42,7 +54,6 @@ class Token:
 class ParserError(Exception): pass
 class ParserEOFError(ParserError): pass
 class ParserBadCharError(ParserError): pass
-
 
 class Parser:
     def mlc(self, c: str) -> bool:
@@ -82,13 +93,13 @@ class Parser:
 
     def tokenize(self, string: str, variables={}) -> List[Token]:
         tokens = []
-        temp = []
+        temp: List[str] = []
         i = 0
         while i < len(string):
             c = string[i]
 
             if c in EOLS:
-                temp and tokens.append(Token("".join(temp), TokenType.STRING))
+                if temp: tokens.append(Token("".join(temp), TokenType.STRING))
                 temp.clear()
 
                 tokens.append(Token(c, TokenType.OP))
@@ -103,17 +114,17 @@ class Parser:
                         break
                     i += 1
                 i -= 1
-                vtemp = "".join(vtemp)
+                vtemp_str = "".join(vtemp)
 
-                if vtemp in variables:
-                    temp.extend(variables[vtemp])
+                if vtemp_str in variables:
+                    temp.extend(variables[vtemp_str])
 
             elif c in ("1", "2"):
                 j = i + 1
                 if j < len(string):
                     if string[j] == ">":
 
-                        temp and tokens.append(Token("".join(temp), TokenType.STRING))
+                        if temp: tokens.append(Token("".join(temp), TokenType.STRING))
                         temp.clear()
 
                         tokens.append(Token(c + ">", TokenType.OP))
@@ -124,13 +135,13 @@ class Parser:
                     temp.append(c)
 
             elif c in (">", "|", "&"):
-                temp and tokens.append(Token("".join(temp), TokenType.STRING))
+                if temp: tokens.append(Token("".join(temp), TokenType.STRING))
                 temp.clear()
 
                 tokens.append(Token(c, TokenType.OP))
 
             elif c == "<":
-                temp and tokens.append(Token("".join(temp), TokenType.STRING))
+                if temp: tokens.append(Token("".join(temp), TokenType.STRING))
                 temp.clear()
 
                 j = i + 1
@@ -157,7 +168,7 @@ class Parser:
                     raise ParserEOFError(f"EOF while scanning for the string literal")
 
                 content = string[i + 1 : n]
-                new_content = []
+                new_content: List[str] = []
                 j = 0
                 while j < len(content):
                     if content[j] == "$":
@@ -170,9 +181,9 @@ class Parser:
                                 break
                             j += 1
                         j -= 1
-                        vtemp = "".join(vtemp)
-                        if vtemp in variables:
-                            new_content.extend(variables[vtemp])
+                        vtemp_str = "".join(vtemp)
+                        if vtemp_str in variables:
+                            new_content.extend(variables[vtemp_str])
                     else:
                         new_content.append(content[j])
                     j += 1
@@ -190,7 +201,7 @@ class Parser:
                 i -= 1
 
             elif self.mws(c):
-                temp and tokens.append(Token("".join(temp), TokenType.STRING))
+                if temp: tokens.append(Token("".join(temp), TokenType.STRING))
                 temp.clear()
 
             else:
@@ -198,17 +209,17 @@ class Parser:
 
             i += 1
 
-        temp and tokens.append(Token("".join(temp), TokenType.STRING))
+        if temp: tokens.append(Token("".join(temp), TokenType.STRING))
 
         if tokens and ((tokens[-1].token_type == TokenType.OP and tokens[-1].string != ';') or (tokens[-1].token_type == TokenType.STRING)):
             tokens.append(Token(';', TokenType.OP))
 
         return tokens
 
-    def parse(self, tokens: List[Token]) -> List[Instr]:
-        instrs = []
+    def parse(self, tokens: List[Token]) -> Instrs:
+        instrs: Instrs = []
         i = 0
-        instr = [InstrType.EVAL, ]
+        instr: Instr = Instr(InstrType.EVAL)
         while i < len(tokens):
             if tokens[i].token_type == TokenType.OP:
                 m = tokens[i].string
@@ -216,27 +227,25 @@ class Parser:
                 if m == '<':
                     i += 1
                     if i < len(tokens):
-                        instrs.append([InstrType.IN, tokens[i].string])
+                        instrs.append(Instr(InstrType.IN, tokens[i].string))
 
                     else:
                         raise Exception('EOL ')
                 else:
                     instrs.append(instr)
-                    instr = []
-                    #print(m)
                     if m == '|':
-                        instr.append(InstrType.PIPE)
+                        instr = Instr(InstrType.PIPE)
                     elif m == '>':
-                        instr.append(InstrType.OUT)
+                        instr = Instr(InstrType.OUT)
                     elif m == '1>':
-                        instr.append(InstrType.OUT1)
+                        instr = Instr(InstrType.OUT1)
                     elif m == '2>':
-                        instr.append(InstrType.OUT2)
+                        instr = Instr(InstrType.OUT2)
                     elif m == ';':
-                        instr.append(InstrType.EVAL)
+                        instr = Instr(InstrType.EVAL)
 
             elif tokens[i].token_type == TokenType.STRING:
-                instr.append(tokens[i].string)
+                instr.add_argument(tokens[i].string)
 
             i += 1
 
@@ -247,11 +256,10 @@ def test() -> None:
     parser = Parser()
     print(parser.parse(parser.tokenize("""./shparser.py -t 'foo|bar > baz;' < ffff < fff ; lol lolo lol""")))
 
-
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="sh parsing tools for shbot")
+    parser: Any  = argparse.ArgumentParser(description="sh parsing tools for shbot")
     parser.add_argument(
         "--tokenize", "-t", metavar="STRING", type=str, help="tokenize the given string"
     )

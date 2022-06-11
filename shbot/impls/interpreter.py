@@ -10,15 +10,17 @@ __all__: List[str] = ['Interpreter']
 
 class Interpreter:
     async def interpret(self, ctx: Context, commands: Commands, instrs: Instrs):
-        out_files = []
-        in_files_cache = {}
-        in_file = None
-        pipe = None
+        out_files: List[File] = []
+        in_files_cache: Dict[str, Any] = {}
+        in_file: Optional[CommandOutput] = None
+        pipe: Optional[CommandOutput] = None
+        out: CommandOutput = CommandOutput()
         for instr in instrs:
-            instr, arg1, *args = instr
+            instr_type = instr.instr_type
+            arg1, *args = instr.args
 
 
-            if instr == InstrType.IN:
+            if instr_type == InstrType.IN:
                 filename = arg1
 
                 names = ctx.get_attachments()
@@ -35,34 +37,33 @@ class Interpreter:
                     in_file + content
 
 
-            elif instr in (InstrType.OUT, InstrType.OUT1, InstrType.OUT2):
+            elif instr_type in (InstrType.OUT, InstrType.OUT1, InstrType.OUT2):
                 filename = arg1
 
                 if out is None:
                     raise Exception
-                elif instr == InstrType.OUT:
+                elif instr_type == InstrType.OUT:
                     fp = b''.join(out.get_stds())
                     out.clear_stds()
-                elif instr == InstrType.OUT1:
+                elif instr_type == InstrType.OUT1:
                     fp = b''.join(out.get_outs())
                     out.clear_outs()
-                elif instr == InstrType.OUT2:
+                elif instr_type == InstrType.OUT2:
                     fp = b''.join(out.get_errs())
                     out.clear_errs()
 
                 out_files.append(File(filename=filename, fp=fp))
 
             else:
-                out = CommandOutput()
                 command_name = arg1
                 command = commands.get(command_name)
 
                 if command is None:
                     raise Exception(f'command {repr(command_name)} not found')
 
-                if instr == InstrType.PIPE:
+                if instr_type == InstrType.PIPE:
                     await command(ctx, out, args, pipe=in_file or pipe)
-                elif instr == InstrType.EVAL:
+                elif instr_type == InstrType.EVAL:
                     await command(ctx, out, args, pipe=in_file)
                     
                 pipe = out
