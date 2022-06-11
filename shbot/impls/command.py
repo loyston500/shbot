@@ -5,7 +5,13 @@ from .argparser import ArgumentParserHelpCallError, ArgumentParserParseError
 
 import argparse
 
-__all__ = ['CommandOutput', 'Stdout', 'Stderr']
+__all__ = ['CommandOutput', 'Stdout', 'Stderr', 'CommandError', 'CommandNotFoundError', 'CommandNotImplementedError']
+
+class CommandError(Exception): pass
+
+class CommandNotFoundError(CommandError): pass
+
+class CommandNotImplementedError(CommandError): pass
 
 class Std:
     def __init__(self, content: bytes):
