@@ -35,6 +35,9 @@ class Instr:
     def add_argument(self, arg: str) -> Instr:
         self.args.append(arg)
         return self
+        
+    def __repr__(self):
+        return f"Instr<type={self.instr_type} args={self.args}>"
 
 Instrs = List[Instr]
 
