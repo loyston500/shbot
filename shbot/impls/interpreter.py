@@ -62,11 +62,13 @@ class Interpreter:
                     raise Exception(f'command {repr(command_name)} not found')
 
                 if instr_type == InstrType.PIPE:
+                    pipe = out
+                    out = CommandOutput()
                     await command(ctx, out, args, pipe=in_file or pipe)
                 elif instr_type == InstrType.EVAL:
+                    out.clear_stds()
                     await command(ctx, out, args, pipe=in_file)
-                    
-                pipe = out
+                
                 in_file = None
 
         content = b''.join(out.get_stds()).decode('utf-8', 'replace') or "** **"
