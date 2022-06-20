@@ -3,7 +3,7 @@ from typing import *
 
 from ..clients.base import Context, File
 from .shparser import Instrs, InstrType
-from .command import Command, CommandOutput, Commands, CommandNotFoundError
+from .command import Command, CommandOutput, Commands
 from io import BytesIO
 
 __all__: List[str] = ['Interpreter']
@@ -59,7 +59,7 @@ class Interpreter:
                 command = commands.get(command_name)
 
                 if command is None:
-                    raise CommandNotFoundError(f'command {repr(command_name)} not found')
+                    raise Exception(f'command {repr(command_name)} not found')
 
                 if instr_type == InstrType.PIPE:
                     pipe = out

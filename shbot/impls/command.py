@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import *
+from typing_extensions import Self
 
 from .argparser import ArgumentParserHelpCallError, ArgumentParserParseError
 
@@ -27,68 +28,72 @@ class Stderr(Std):
 
 
 class CommandOutput:
-    def __init__(self, stds: List[Std]=None, code=0):
+    def __init__(self, stds: List[Std]=None, code=0) -> None:
         self.stds = stds if stds is not None else []
         self.code = code
 
-    def stdout_write(self, content):
+    def stdout_write(self, content: Any) -> None:
         if not isinstance(content, bytes):
             content = str(content).encode()
 
         self.stds.append(Stdout(content))
 
-    def stderr_write(self, content):
+    def stderr_write(self, content: Any) -> None:
         if not isinstance(content, bytes):
             content = str(content).encode()
 
         self.stds.append(Stderr(content))
 
-    def set_code(self, code):
+    def set_code(self, code: int) -> None:
         self.code = code
 
-    def __add__(self, content):
-        self.stdout_write(content)
+    def __lshift__(self, content: Any) -> Self:
+        self.stdout_write(content) 
         return self
 
-    def __sub__(self, content):
+    def __rshift__(self, content: Any) -> Self:
         self.stderr_write(content)
         return self
 
-    def __matmul__(self, code):
-        self.set_code(code)
+    def __floordiv__(self, content: Any) -> Self:
+        self.stderr_write(content)
+        return self
+
+    def __matmul__(self, num: int) -> Self:
+        self.set_code(num)
         return self
     
-    def __bytes__(self):
+    def __bytes__(self) -> bytes:
         return b''.join(self.get_stds())
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<stds={self.stds} code={self.code}>"
 
     def clear(self):
         self.stds.clear()
         self.code = 0
 
-    def get_outs(self):
+    def get_outs(self) -> Generator[bytes, None, None]:
         for std in self.stds:
             if isinstance(std, Stdout):
                 yield std.content
 
-    def get_errs(self):
+    def get_errs(self) -> Generator[bytes, None, None]:
         for std in self.stds:
             if isinstance(std, Stderr):
                 yield std.content
 
-    def get_stds(self):
+    def get_stds(self) -> Generator[bytes, None, None]:
         for std in self.stds:
             yield std.content
             
-    def clear_stds(self):
+    def clear_stds(self) -> None:
         self.clear()
         
-    def clear_outs(self):
+    def clear_outs(self) -> None:
         self.stds = [std for std in self.stds if not isinstance(std, Stdout)]
         
-    def clear_errs(self):
+    def clear_errs(self) -> None:
         self.stds = [std for std in self.stds if not isinstance(std, Stderr)]
 
 
@@ -124,19 +129,19 @@ class Commands:
                         args = argparser.parse_args(args)
 
                     except ArgumentParserParseError as err:
-                        out @ 1 - err.args[0]
+                        ctx @ 1 // err.args[0]
                         argparser.error_message = None
                     except ArgumentParserHelpCallError as err:
-                        out + argparser.format_help()
+                        ctx << argparser.format_help()
                         argparser.help = None
                     else:    
                         await coro(ctx, out, args, *_args, **kwargs)
-                        out
+                        ctx
 
                 _help = argparser.format_help()
             else:
                 async def wrap(ctx, out, *args, **kwargs):
-                    await coro(ctx, out, *args, **kwargs)
+                    await coro(ctx, out,  *args, **kwargs)
 
                 _help = coro.__doc__
 

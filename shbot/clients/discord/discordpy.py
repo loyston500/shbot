@@ -1,7 +1,12 @@
+from telnetlib import SE
 from typing import *
 from io import BytesIO
+from typing_extensions import Self
+from click import command
 
 import discord
+
+from shbot.impls.command import CommandOutput
 from ..base import Context as BaseContext, File, Files
 
 __all__: List[str] = ['Context', 'File']
@@ -21,3 +26,10 @@ class Context(BaseContext):
         
     async def fetch_attachment_content(self, attch) -> bytes:
         return await attch.read()
+
+    def __eq__(self, item: object) -> bool:
+        return item == self.client_name
+
+    
+
+    
